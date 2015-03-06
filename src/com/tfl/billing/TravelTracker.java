@@ -13,11 +13,29 @@ public class TravelTracker implements ScanListener {
     static final BigDecimal OFF_PEAK_JOURNEY_PRICE = new BigDecimal(2.40);
     static final BigDecimal PEAK_JOURNEY_PRICE = new BigDecimal(3.20);
 
-    private final List<JourneyEvent> eventLog = new ArrayList<JourneyEvent>();
-    private final Set<UUID> currentlyTravelling = new HashSet<UUID>();
+    private final List<JourneyEvent> eventLog;
+    private final Set<UUID> currentlyTravelling;
+    
+    /**
+     * Default constructor
+     */
+    public TravelTracker() {
+    	eventLog = new ArrayList<JourneyEvent>();
+    	currentlyTravelling = new HashSet<UUID>();        
+    }
+    
+    /**
+     * For testing only
+     * @param eventLog
+     * @param currentlyTravelling
+     */
+    protected TravelTracker(List<JourneyEvent> eventLog, Set<UUID> currentlyTravelling) {
+    	this.eventLog = eventLog;
+    	this.currentlyTravelling = currentlyTravelling;        
+    }
 
     public void chargeAccounts() {
-        CustomerDatabase customerDatabase = CustomerDatabase.getInstance();
+        CustomerDatabase customerDatabase = getCustomerDatabase();
 
         List<Customer> customers = customerDatabase.getCustomers();
         for (Customer customer : customers) {
@@ -26,36 +44,10 @@ public class TravelTracker implements ScanListener {
     }
 
     private void totalJourneysFor(Customer customer) {
-        List<JourneyEvent> customerJourneyEvents = new ArrayList<JourneyEvent>();
-        for (JourneyEvent journeyEvent : eventLog) {
-            if (journeyEvent.cardId().equals(customer.cardId())) {
-                customerJourneyEvents.add(journeyEvent);
-            }
-        }
-
-        List<Journey> journeys = new ArrayList<Journey>();
-
-        JourneyEvent start = null;
-        for (JourneyEvent event : customerJourneyEvents) {
-            if (event instanceof JourneyStart) {
-                start = event;
-            }
-            if (event instanceof JourneyEnd && start != null) {
-                journeys.add(new Journey(start, event));
-                start = null;
-            }
-        }
-
-        BigDecimal customerTotal = new BigDecimal(0);
-        for (Journey journey : journeys) {
-            BigDecimal journeyPrice = OFF_PEAK_JOURNEY_PRICE;
-            if (peak(journey)) {
-                journeyPrice = PEAK_JOURNEY_PRICE;
-            }
-            customerTotal = customerTotal.add(journeyPrice);
-        }
-
-        PaymentsSystem.getInstance().charge(customer, journeys, roundToNearestPenny(customerTotal));
+        List<JourneyEvent> customerJourneyEvents = getCustomerEvents(customer, eventLog);
+        List<Journey> journeys = getJourneysFromLog(customerJourneyEvents);
+        BigDecimal customerTotal = getCustomerTotal(journeys);        
+        getPaymentsSystem().charge(customer, journeys, roundToNearestPenny(customerTotal));
     }
 
     private BigDecimal roundToNearestPenny(BigDecimal poundsAndPence) {
@@ -79,19 +71,78 @@ public class TravelTracker implements ScanListener {
         }
     }
 
-    @Override
     public void cardScanned(UUID cardId, UUID readerId) {
         if (currentlyTravelling.contains(cardId)) {
-            eventLog.add(new JourneyEnd(cardId, readerId));
+            eventLog.add(getNewJourneyEnd(cardId, readerId));
             currentlyTravelling.remove(cardId);
         } else {
-            if (CustomerDatabase.getInstance().isRegisteredId(cardId)) {
+            if (getCustomerDatabase().isRegisteredId(cardId)) {
                 currentlyTravelling.add(cardId);
-                eventLog.add(new JourneyStart(cardId, readerId));
+                eventLog.add(getNewJourneyStart(cardId, readerId));
             } else {
-                throw new UnknownOysterCardException(cardId);
+            	raiseUnknownOysterCardException(cardId);
             }
         }
     }
+    
+    protected CustomerDatabase getCustomerDatabase() {
+    	return CustomerDatabase.getInstance();
+    }
+    
+    protected PaymentsSystem getPaymentsSystem() {
+    	return PaymentsSystem.getInstance();
+    }
+    
+    protected JourneyStart getNewJourneyStart(UUID cardId, UUID readerId) {
+    	return new JourneyStart(cardId, readerId);
+    }
+    
+    protected JourneyEnd getNewJourneyEnd(UUID cardId, UUID readerId) {
+    	return new JourneyEnd(cardId, readerId);
+    }
+    
+    protected void raiseUnknownOysterCardException(UUID cardId) {
+    	throw new UnknownOysterCardException(cardId);
+    }
+    
+    protected List<JourneyEvent> getCustomerEvents(Customer customer, List<JourneyEvent> eventLog) {
+    	List<JourneyEvent> customerJourneyEvents = new ArrayList<JourneyEvent>();
+        for (JourneyEvent journeyEvent : eventLog) {
+            if (journeyEvent.cardId().equals(customer.cardId())) {
+                customerJourneyEvents.add(journeyEvent);
+            }
+        }
+        
+        return customerJourneyEvents;
+    }
+    
+    protected List<Journey> getJourneysFromLog(List<JourneyEvent> customerJourneyEvents) {
+    	List<Journey> journeys = new ArrayList<Journey>();
 
+        JourneyEvent start = null;
+        for (JourneyEvent event : customerJourneyEvents) {
+            if (event instanceof JourneyStart) {
+                start = event;
+            }
+            if (event instanceof JourneyEnd && start != null) {
+                journeys.add(new Journey(start, event));
+                start = null;
+            }
+        }
+        
+        return journeys;
+    }
+    
+    protected BigDecimal getCustomerTotal(List<Journey> journeys) {
+    	BigDecimal customerTotal = new BigDecimal(0);
+    	for (Journey journey : journeys) {
+            BigDecimal journeyPrice = OFF_PEAK_JOURNEY_PRICE;
+            if (peak(journey)) {
+                journeyPrice = PEAK_JOURNEY_PRICE;
+            }
+            customerTotal = customerTotal.add(journeyPrice);
+        }
+    	
+    	return customerTotal;
+    }
 }
