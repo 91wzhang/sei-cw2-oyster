@@ -3,8 +3,16 @@
  */
 package com.tfl.billing;
 
-import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.*;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -14,17 +22,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.*;
-
-import static org.mockito.Mockito.*;
-
 import org.mockito.runners.MockitoJUnitRunner;
 
 import com.oyster.OysterCardReader;
 import com.tfl.external.Customer;
 import com.tfl.external.CustomerDatabase;
 import com.tfl.external.PaymentsSystem;
-
-import static org.hamcrest.CoreMatchers.instanceOf;
 
 
 /**
@@ -33,9 +36,6 @@ import static org.hamcrest.CoreMatchers.instanceOf;
  */
 @RunWith(MockitoJUnitRunner.class)
 public class TravelTrackerTest {
-
-	@Mock
-	private List<JourneyEvent> mockEventLog;
 	
 	@Mock
     private Set<UUID> mockCurrentlyTravelling;
@@ -45,7 +45,8 @@ public class TravelTrackerTest {
 	
 	@Mock
 	private PaymentsSystem mockPaymentsSystem;
-		
+
+	private List<JourneyEvent> mockEventLog;
 	private TravelTracker tracker;
 	
 	/**
@@ -53,10 +54,12 @@ public class TravelTrackerTest {
 	 */
 	@Before
 	public void setUp() throws Exception {
+		mockEventLog = spy(new ArrayList<JourneyEvent>());
 		tracker = spy(new TravelTracker(mockEventLog, mockCurrentlyTravelling));
 		
 		doReturn(mockCustomerDatabase).when(tracker).getCustomerDatabase();
-		doReturn(mockPaymentsSystem).when(tracker).getPaymentsSystem();				
+		doReturn(mockPaymentsSystem).when(tracker).getPaymentsSystem();
+		doNothing().when(mockPaymentsSystem).charge(any(Customer.class), anyListOf(Journey.class), any(BigDecimal.class));
 	}
 
 	/**
@@ -72,10 +75,27 @@ public class TravelTrackerTest {
 	@Test
 	public void testChargeAccounts() {
 		UUID cardId = UUID.randomUUID();
-		Customer mockCustomer = mock(Customer.class);
-		doReturn(cardId).when(mockCustomer).cardId();
+		UUID readerId = UUID.randomUUID();
+		Customer mockCustomer1 = mock(Customer.class);
+		Customer mockCustomer2 = mock(Customer.class);
+		doReturn(cardId).when(mockCustomer1).cardId();
+		doReturn(cardId).when(mockCustomer2).cardId();
 		
-		fail("Not yet implemented"); // TODO
+		List<Customer> mockCustomerCollection = new ArrayList<Customer>();
+		mockCustomerCollection.add(mockCustomer1);
+		mockCustomerCollection.add(mockCustomer2);
+		
+		doReturn(mockCustomerCollection).when(mockCustomerDatabase).getCustomers();
+		
+		JourneyStart mockStart = new JourneyStart(cardId, readerId);
+		JourneyEnd mockEnd = new JourneyEnd(cardId, readerId);
+		mockEventLog.add(mockStart);
+		mockEventLog.add(mockEnd);
+		doReturn(true).doReturn(false).when(tracker).peak(any(Journey.class));
+		tracker.chargeAccounts();
+		
+		verify(mockPaymentsSystem).charge(mockCustomer1, anyListOf(Journey.class), tracker.roundToNearestPenny(TravelTracker.PEAK_JOURNEY_PRICE));
+		verify(mockPaymentsSystem).charge(mockCustomer2, anyListOf(Journey.class), tracker.roundToNearestPenny(TravelTracker.OFF_PEAK_JOURNEY_PRICE));				
 	}
 
 	/**

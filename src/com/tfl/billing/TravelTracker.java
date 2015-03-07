@@ -50,15 +50,15 @@ public class TravelTracker implements ScanListener {
         getPaymentsSystem().charge(customer, journeys, roundToNearestPenny(customerTotal));
     }
 
-    private BigDecimal roundToNearestPenny(BigDecimal poundsAndPence) {
+    protected BigDecimal roundToNearestPenny(BigDecimal poundsAndPence) {
         return poundsAndPence.setScale(2, BigDecimal.ROUND_HALF_UP);
     }
 
-    private boolean peak(Journey journey) {
+    protected boolean peak(Journey journey) {
         return peak(journey.startTime()) || peak(journey.endTime());
     }
 
-    private boolean peak(Date time) {
+    protected boolean peak(Date time) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(time);
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
