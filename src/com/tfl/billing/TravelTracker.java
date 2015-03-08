@@ -105,7 +105,7 @@ public class TravelTracker implements ScanListener {
     	throw new UnknownOysterCardException(cardId);
     }
     
-    protected List<JourneyEvent> getCustomerEvents(Customer customer, List<JourneyEvent> eventLog) {
+    private List<JourneyEvent> getCustomerEvents(Customer customer, List<JourneyEvent> eventLog) {
     	List<JourneyEvent> customerJourneyEvents = new ArrayList<JourneyEvent>();
         for (JourneyEvent journeyEvent : eventLog) {
             if (journeyEvent.cardId().equals(customer.cardId())) {
@@ -116,7 +116,7 @@ public class TravelTracker implements ScanListener {
         return customerJourneyEvents;
     }
     
-    protected List<Journey> getJourneysFromLog(List<JourneyEvent> customerJourneyEvents) {
+    private List<Journey> getJourneysFromLog(List<JourneyEvent> customerJourneyEvents) {
     	List<Journey> journeys = new ArrayList<Journey>();
 
         JourneyEvent start = null;
@@ -133,7 +133,7 @@ public class TravelTracker implements ScanListener {
         return journeys;
     }
     
-    protected BigDecimal getCustomerTotal(List<Journey> journeys) {
+    private BigDecimal getCustomerTotal(List<Journey> journeys) {
     	BigDecimal customerTotal = new BigDecimal(0);
     	for (Journey journey : journeys) {
             BigDecimal journeyPrice = OFF_PEAK_JOURNEY_PRICE;

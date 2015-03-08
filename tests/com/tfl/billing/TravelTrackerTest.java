@@ -5,10 +5,6 @@ package com.tfl.billing;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.*;
 
 import java.math.BigDecimal;
@@ -92,10 +88,14 @@ public class TravelTrackerTest {
 		mockEventLog.add(mockStart);
 		mockEventLog.add(mockEnd);
 		doReturn(true).doReturn(false).when(tracker).peak(any(Journey.class));
-		tracker.chargeAccounts();
+				
+		BigDecimal peakPrice = tracker.roundToNearestPenny(TravelTracker.PEAK_JOURNEY_PRICE);
+		BigDecimal offpeakPrice = tracker.roundToNearestPenny(TravelTracker.OFF_PEAK_JOURNEY_PRICE);
 		
-		verify(mockPaymentsSystem).charge(mockCustomer1, anyListOf(Journey.class), tracker.roundToNearestPenny(TravelTracker.PEAK_JOURNEY_PRICE));
-		verify(mockPaymentsSystem).charge(mockCustomer2, anyListOf(Journey.class), tracker.roundToNearestPenny(TravelTracker.OFF_PEAK_JOURNEY_PRICE));				
+		tracker.chargeAccounts();						
+
+		verify(mockPaymentsSystem).charge(eq(mockCustomer1), anyListOf(Journey.class), eq(peakPrice));
+		verify(mockPaymentsSystem).charge(eq(mockCustomer2), anyListOf(Journey.class), eq(offpeakPrice));				
 	}
 
 	/**
