@@ -33,6 +33,9 @@ import com.tfl.external.PaymentsSystem;
 @RunWith(MockitoJUnitRunner.class)
 public class TravelTrackerTest {
 	
+	static final BigDecimal OFF_PEAK_JOURNEY_PRICE = new BigDecimal(2.40);
+    static final BigDecimal PEAK_JOURNEY_PRICE = new BigDecimal(3.20);
+	
 	@Mock
     private Set<UUID> mockCurrentlyTravelling;
 	
@@ -89,8 +92,8 @@ public class TravelTrackerTest {
 		mockEventLog.add(mockEnd);
 		doReturn(true).doReturn(false).when(tracker).peak(any(Journey.class));
 				
-		BigDecimal peakPrice = tracker.roundToNearestPenny(TravelTracker.PEAK_JOURNEY_PRICE);
-		BigDecimal offpeakPrice = tracker.roundToNearestPenny(TravelTracker.OFF_PEAK_JOURNEY_PRICE);
+		BigDecimal peakPrice = tracker.roundToNearestPenny(PEAK_JOURNEY_PRICE);
+		BigDecimal offpeakPrice = tracker.roundToNearestPenny(OFF_PEAK_JOURNEY_PRICE);
 		
 		tracker.chargeAccounts();						
 
