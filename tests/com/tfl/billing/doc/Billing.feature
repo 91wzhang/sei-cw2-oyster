@@ -6,7 +6,7 @@ Background:
         | Shelly Cooper | 3f1b3b55-f266-4426-ba1b-bcc506541866 |
     And a mocked payments system   
 
-Scenario Outline: B1
+Scenario Outline: Billing
     Given <customer> made the following travel: <travel>
     Then <customer> is charged for <fee>
     
