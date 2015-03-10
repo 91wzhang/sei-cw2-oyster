@@ -10,8 +10,12 @@ import java.util.*;
 
 public class TravelTracker implements ScanListener {
 
-    static final BigDecimal OFF_PEAK_JOURNEY_PRICE = new BigDecimal(2.40);
-    static final BigDecimal PEAK_JOURNEY_PRICE = new BigDecimal(3.20);
+	static final BigDecimal PEAK_JOURNEY_LONG_PRICE = new BigDecimal(3.80);
+	static final BigDecimal PEAK_JOURNEY_SHORT_PRICE = new BigDecimal(2.90);
+	static final BigDecimal OFF_PEAK_LONG_JOURNEY_PRICE = new BigDecimal(2.70);
+	static final BigDecimal OFF_PEAK_SHORT_JOURNEY_PRICE = new BigDecimal(1.60);
+	static final BigDecimal PEAK_DAILY_CAPS = new BigDecimal(7.00);
+	static final BigDecimal OFF_PEAK_DAILY_CAPS = new BigDecimal(9.00);
 
     private final List<JourneyEvent> eventLog;
     private final Set<UUID> currentlyTravelling;
@@ -46,7 +50,7 @@ public class TravelTracker implements ScanListener {
     private void totalJourneysFor(Customer customer) {
         List<JourneyEvent> customerJourneyEvents = getCustomerEvents(customer, eventLog);
         List<Journey> journeys = getJourneysFromLog(customerJourneyEvents);
-        BigDecimal customerTotal = getCustomerTotal(journeys);        
+        BigDecimal customerTotal = getCustomerTotal(journeys);   
         getPaymentsSystem().charge(customer, journeys, roundToNearestPenny(customerTotal));
     }
 
@@ -64,7 +68,14 @@ public class TravelTracker implements ScanListener {
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
         return (hour >= 6 && hour <= 9) || (hour >= 17 && hour <= 19);
     }
-
+	
+	private boolean longJourney(Journey journey) {
+		long diff = journey.endTime().getTime() - journey.startTime().getTime();
+		long minutes = diff / (60 * 1000) % 60;
+		if (minutes <= 25)
+			return false;
+		return true;
+	}
     public void connect(OysterCardReader... cardReaders) {
         for (OysterCardReader cardReader : cardReaders) {
             cardReader.register(this);
@@ -135,14 +146,31 @@ public class TravelTracker implements ScanListener {
     
     private BigDecimal getCustomerTotal(List<Journey> journeys) {
     	BigDecimal customerTotal = new BigDecimal(0);
-    	for (Journey journey : journeys) {
-            BigDecimal journeyPrice = OFF_PEAK_JOURNEY_PRICE;
-            if (peak(journey)) {
-                journeyPrice = PEAK_JOURNEY_PRICE;
-            }
-            customerTotal = customerTotal.add(journeyPrice);
-        }
-    	
-    	return customerTotal;
+		boolean anyPeak = false;
+		for (Journey journey : journeys) {
+			// New feature
+			BigDecimal journeyPrice = PEAK_JOURNEY_LONG_PRICE;
+			if (peak(journey) && !longJourney(journey)) {
+				journeyPrice = PEAK_JOURNEY_SHORT_PRICE;
+			} else if (!peak(journey) && longJourney(journey)) {
+				journeyPrice = OFF_PEAK_LONG_JOURNEY_PRICE;
+			} else if (!peak(journey) && !longJourney(journey)) {
+				journeyPrice = OFF_PEAK_SHORT_JOURNEY_PRICE;
+			}
+
+			customerTotal = customerTotal.add(journeyPrice);
+
+			if (peak(journey)) {
+				anyPeak = true;
+			}
+
+			// Apply "caps" rule: peak cap & off-peak cap
+			if (anyPeak) {
+				customerTotal.min(PEAK_DAILY_CAPS);
+			} else {
+				customerTotal.min(OFF_PEAK_DAILY_CAPS);
+			}
+		}
+		return customerTotal;
     }
 }
