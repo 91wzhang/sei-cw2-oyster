@@ -12,6 +12,6 @@ Scenario Outline: Billing
     
 Examples: 
     |    customer   |                                  travel                                 |  fee  |
-    | Fred Bloggs   | PADDINGTON@08:00-BAKER_STREET@08:30, PADDINGTON@10:40-KINGS_CROSS@11:20 |  5.60 |
+    | Fred Bloggs   | PADDINGTON@08:00-BAKER_STREET@08:30, BAKER_STREET@10:40-ROYAL_OAK@11:20 |  6.50 |
     | Shelly Cooper | PADDINGTON@08:00-BAKER_STREET@08:30                                     |  3.20 |
     | Shelly Cooper | NOTTING_HILL_GATE@11:10-BAKER_STREET@11:40                              |  2.40 |
