@@ -14,8 +14,8 @@ public class TravelTracker implements ScanListener {
 	static final BigDecimal PEAK_JOURNEY_SHORT_PRICE = new BigDecimal(2.90);
 	static final BigDecimal OFF_PEAK_LONG_JOURNEY_PRICE = new BigDecimal(2.70);
 	static final BigDecimal OFF_PEAK_SHORT_JOURNEY_PRICE = new BigDecimal(1.60);
-	static final BigDecimal PEAK_DAILY_CAPS = new BigDecimal(7.00);
-	static final BigDecimal OFF_PEAK_DAILY_CAPS = new BigDecimal(9.00);
+	static final BigDecimal PEAK_DAILY_CAPS = new BigDecimal(9.00);
+	static final BigDecimal OFF_PEAK_DAILY_CAPS = new BigDecimal(7.00);
 
     private final List<JourneyEvent> eventLog;
     private final Set<UUID> currentlyTravelling;
@@ -51,6 +51,7 @@ public class TravelTracker implements ScanListener {
         List<JourneyEvent> customerJourneyEvents = getCustomerEvents(customer, eventLog);
         List<Journey> journeys = getJourneysFromLog(customerJourneyEvents);
         BigDecimal customerTotal = getCustomerTotal(journeys);   
+        System.out.println(customer);
         getPaymentsSystem().charge(customer, journeys, roundToNearestPenny(customerTotal));
     }
 
@@ -164,13 +165,15 @@ public class TravelTracker implements ScanListener {
 				anyPeak = true;
 			}
 
-			// Apply "caps" rule: peak cap & off-peak cap
-			if (anyPeak) {
-				customerTotal.min(PEAK_DAILY_CAPS);
-			} else {
-				customerTotal.min(OFF_PEAK_DAILY_CAPS);
-			}
 		}
+		
+		// Apply "caps" rule: peak cap & off-peak cap
+		if (anyPeak) {
+			customerTotal = customerTotal.min(PEAK_DAILY_CAPS);
+		} else {
+			customerTotal = customerTotal.min(OFF_PEAK_DAILY_CAPS);
+		}
+		
 		return customerTotal;
     }
 }
