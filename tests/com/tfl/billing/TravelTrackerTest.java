@@ -164,11 +164,12 @@ public class TravelTrackerTest {
 	 */
 	@Test
 	public void testCardScannedForEnterWithUnregisteredCard() {
-		doReturn(false).when(this.mockCurrentlyTravelling).contains(any(UUID.class));
-		doReturn(false).when(this.mockCustomerDatabase).isRegisteredId(any(UUID.class));
-		doNothing().when(this.tracker).raiseUnknownOysterCardException(any(UUID.class));
+		UUID cardId = UUID.randomUUID();		
+		UUID readerId = UUID.randomUUID();
 		
-		UUID cardId = UUID.randomUUID();		UUID readerId = UUID.randomUUID();
+		doReturn(false).when(this.mockCurrentlyTravelling).contains(cardId);
+		doReturn(false).when(this.mockCustomerDatabase).isRegisteredId(cardId);
+		doNothing().when(this.tracker).raiseUnknownOysterCardException(any(UUID.class));				
 		
 		this.tracker.cardScanned(cardId, readerId);
 		
