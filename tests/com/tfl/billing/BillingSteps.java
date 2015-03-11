@@ -36,7 +36,7 @@ import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 
 /**
- * @author Wai
+ * @author DanDan Lyu, Wei Zhang, Ze Chen
  *
  */
 public class BillingSteps {	
@@ -104,14 +104,14 @@ public class BillingSteps {
 
 	@Then("^(.*) is charged for (\\d+\\.\\d+)$")
 	public void ChargeCustomer(String customer, String fee) throws Throwable {		       
-		doReturn(mockCustomerDatabase).when(this.tracker).getCustomerDatabase();
-		doReturn(mockPaymentsSystem).when(this.tracker).getPaymentsSystem();
-		doReturn(this.mockCustomerCollection).when(mockCustomerDatabase).getCustomers();
+		doReturn(this.mockCustomerDatabase).when(this.tracker).getCustomerDatabase();
+		doReturn(this.mockPaymentsSystem).when(this.tracker).getPaymentsSystem();
+		doReturn(this.mockCustomerCollection).when(this.mockCustomerDatabase).getCustomers();
 		
 		Customer c = this.customers.get(customer);		
-		tracker.chargeAccounts();		
+		this.tracker.chargeAccounts();		
 
-		verify(mockPaymentsSystem).charge(eq(c), anyListOf(Journey.class), eq(new BigDecimal(fee)));		
+		verify(this.mockPaymentsSystem).charge(eq(c), anyListOf(Journey.class), eq(new BigDecimal(fee)));		
 	}
 	
 	/**
@@ -134,7 +134,7 @@ public class BillingSteps {
 		JourneyEnd end = spy(new JourneyEnd(cardId, readerId));
 		doReturn(dt.getTime()).when(end).time();
 		
-		mockEventLog.add(start);
-		mockEventLog.add(end);		
+		this.mockEventLog.add(start);
+		this.mockEventLog.add(end);		
 	}
 }

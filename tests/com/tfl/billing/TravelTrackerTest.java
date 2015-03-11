@@ -31,7 +31,7 @@ import com.tfl.external.PaymentsSystem;
 
 
 /**
- * @author Wai
+ * @author DanDan Lyu, Wei Zhang, Ze Chen 
  *
  */
 @RunWith(MockitoJUnitRunner.class)
@@ -61,12 +61,12 @@ public class TravelTrackerTest {
 	 */
 	@Before
 	public void setUp() throws Exception {
-		mockEventLog = spy(new ArrayList<JourneyEvent>());
-		tracker = spy(new TravelTracker(mockEventLog, mockCurrentlyTravelling));
+		this.mockEventLog = spy(new ArrayList<JourneyEvent>());
+		this.tracker = spy(new TravelTracker(this.mockEventLog, this.mockCurrentlyTravelling));
 		
-		doReturn(mockCustomerDatabase).when(tracker).getCustomerDatabase();
-		doReturn(mockPaymentsSystem).when(tracker).getPaymentsSystem();
-		doNothing().when(mockPaymentsSystem).charge(any(Customer.class), anyListOf(Journey.class), any(BigDecimal.class));
+		doReturn(this.mockCustomerDatabase).when(this.tracker).getCustomerDatabase();
+		doReturn(this.mockPaymentsSystem).when(this.tracker).getPaymentsSystem();
+		doNothing().when(this.mockPaymentsSystem).charge(any(Customer.class), anyListOf(Journey.class), any(BigDecimal.class));
 	}
 
 	/**
@@ -94,7 +94,7 @@ public class TravelTrackerTest {
 		mockCustomerCollection.add(mockCustomer1);
 		mockCustomerCollection.add(mockCustomer2);
 		
-		doReturn(mockCustomerCollection).when(mockCustomerDatabase).getCustomers();
+		doReturn(mockCustomerCollection).when(this.mockCustomerDatabase).getCustomers();
 		
 		try {
 			addMockJourney(cardId1, readerId, "08:00", "08:10");
@@ -103,10 +103,10 @@ public class TravelTrackerTest {
 			e.printStackTrace();
 		}
 		
-		tracker.chargeAccounts();						
+		this.tracker.chargeAccounts();						
 
-		verify(mockPaymentsSystem).charge(eq(mockCustomer1), anyListOf(Journey.class), eq(PEAK_JOURNEY_SHORT_PRICE));
-		verify(mockPaymentsSystem).charge(eq(mockCustomer2), anyListOf(Journey.class), eq(OFF_PEAK_SHORT_JOURNEY_PRICE));				
+		verify(this.mockPaymentsSystem).charge(eq(mockCustomer1), anyListOf(Journey.class), eq(PEAK_JOURNEY_SHORT_PRICE));
+		verify(this.mockPaymentsSystem).charge(eq(mockCustomer2), anyListOf(Journey.class), eq(OFF_PEAK_SHORT_JOURNEY_PRICE));				
 	}
 
 	/**
@@ -117,10 +117,10 @@ public class TravelTrackerTest {
 		OysterCardReader mockCardReader1 = mock(OysterCardReader.class);
 		OysterCardReader mockCardReader2 = mock(OysterCardReader.class);
 		
-		tracker.connect(mockCardReader1, mockCardReader2);
+		this.tracker.connect(mockCardReader1, mockCardReader2);
 		
-		verify(mockCardReader1).register(tracker);
-		verify(mockCardReader2).register(tracker);		
+		verify(mockCardReader1).register(this.tracker);
+		verify(mockCardReader2).register(this.tracker);		
 	}
 
 	/**
@@ -129,15 +129,15 @@ public class TravelTrackerTest {
 	@Test
 	public void testCardScannedForLeave() {
 		JourneyEnd mockJourneyEnd = mock(JourneyEnd.class);
-		doReturn(mockJourneyEnd).when(tracker).getNewJourneyEnd(any(UUID.class), any(UUID.class));		
-		doReturn(true).when(mockCurrentlyTravelling).contains(any(UUID.class));
-		
 		UUID cardId = UUID.randomUUID();
 		UUID readerId = UUID.randomUUID();
-		tracker.cardScanned(cardId, readerId);
+		doReturn(mockJourneyEnd).when(this.tracker).getNewJourneyEnd(cardId, readerId);		
+		doReturn(true).when(this.mockCurrentlyTravelling).contains(cardId);		
 		
-		verify(mockEventLog).add(mockJourneyEnd);
-        verify(mockCurrentlyTravelling).remove(cardId);
+		this.tracker.cardScanned(cardId, readerId);
+		
+		verify(this.mockEventLog).add(mockJourneyEnd);
+        verify(this.mockCurrentlyTravelling).remove(cardId);
 	}	
 	
 	/**
@@ -146,16 +146,17 @@ public class TravelTrackerTest {
 	@Test
 	public void testCardScannedForEnterWithRegisteredCard() {
 		JourneyStart mockJourneyStart = mock(JourneyStart.class);
-		doReturn(mockJourneyStart).when(tracker).getNewJourneyStart(any(UUID.class), any(UUID.class));		
-		doReturn(false).when(mockCurrentlyTravelling).contains(any(UUID.class));
-		doReturn(true).when(mockCustomerDatabase).isRegisteredId(any(UUID.class));
-		
 		UUID cardId = UUID.randomUUID();
 		UUID readerId = UUID.randomUUID();
-		tracker.cardScanned(cardId, readerId);
 		
-		verify(mockCurrentlyTravelling).add(cardId);
-		verify(mockEventLog).add(mockJourneyStart);
+		doReturn(mockJourneyStart).when(this.tracker).getNewJourneyStart(cardId, readerId);		
+		doReturn(false).when(this.mockCurrentlyTravelling).contains(cardId);
+		doReturn(true).when(this.mockCustomerDatabase).isRegisteredId(cardId);
+				
+		this.tracker.cardScanned(cardId, readerId);
+		
+		verify(this.mockCurrentlyTravelling).add(cardId);
+		verify(this.mockEventLog).add(mockJourneyStart);
 	}
 	
 	/**
@@ -163,15 +164,15 @@ public class TravelTrackerTest {
 	 */
 	@Test
 	public void testCardScannedForEnterWithUnregisteredCard() {
-		doReturn(false).when(mockCurrentlyTravelling).contains(any(UUID.class));
-		doReturn(false).when(mockCustomerDatabase).isRegisteredId(any(UUID.class));
-		doNothing().when(tracker).raiseUnknownOysterCardException(any(UUID.class));
+		doReturn(false).when(this.mockCurrentlyTravelling).contains(any(UUID.class));
+		doReturn(false).when(this.mockCustomerDatabase).isRegisteredId(any(UUID.class));
+		doNothing().when(this.tracker).raiseUnknownOysterCardException(any(UUID.class));
 		
 		UUID cardId = UUID.randomUUID();		UUID readerId = UUID.randomUUID();
 		
-		tracker.cardScanned(cardId, readerId);
+		this.tracker.cardScanned(cardId, readerId);
 		
-		verify(tracker).raiseUnknownOysterCardException(cardId);
+		verify(this.tracker).raiseUnknownOysterCardException(cardId);
 	}
 	
 	/**
@@ -194,8 +195,8 @@ public class TravelTrackerTest {
 		JourneyEnd end = spy(new JourneyEnd(cardId, readerId));
 		doReturn(dt.getTime()).when(end).time();
 		
-		mockEventLog.add(start);
-		mockEventLog.add(end);		
+		this.mockEventLog.add(start);
+		this.mockEventLog.add(end);		
 	}
 
 }
