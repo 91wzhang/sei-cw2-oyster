@@ -96,17 +96,12 @@ public class TravelTrackerTest {
 		
 		doReturn(mockCustomerCollection).when(mockCustomerDatabase).getCustomers();
 		
-		JourneyEvent[] mockJourney;		
 		try {
-			mockJourney = generateMockJourney(cardId1, readerId, "08:00", "08:10");
-			mockEventLog.add(mockJourney[0]);
-			mockEventLog.add(mockJourney[1]);
-			mockJourney = generateMockJourney(cardId2, readerId, "11:10", "11:25");
-			mockEventLog.add(mockJourney[0]);
-			mockEventLog.add(mockJourney[1]);
+			addMockJourney(cardId1, readerId, "08:00", "08:10");
+			addMockJourney(cardId2, readerId, "11:10", "11:25");			
 		} catch (ParseException e) {
 			e.printStackTrace();
-		}	
+		}
 		
 		tracker.chargeAccounts();						
 
@@ -188,19 +183,19 @@ public class TravelTrackerTest {
 	 * @return
 	 * @throws ParseException
 	 */
-	private JourneyEvent[] generateMockJourney(UUID cardId, UUID readerId, String startTime, String endTime) throws ParseException {
+	private void addMockJourney(UUID cardId, UUID readerId, String startTime, String endTime) throws ParseException {
 		DateFormat format = new SimpleDateFormat("HH:mm");
-		JourneyEvent[] journey = new JourneyEvent[2];
 
 		Date dt = format.parse(startTime);			
-		journey[0] = spy(new JourneyStart(cardId, readerId));
-		doReturn(dt.getTime()).when(journey[0]).time();					
+		JourneyStart start = spy(new JourneyStart(cardId, readerId));
+		doReturn(dt.getTime()).when(start).time();					
 		
 		dt = format.parse(endTime);			
-		journey[1] = spy(new JourneyEnd(cardId, readerId));
-		doReturn(dt.getTime()).when(journey[1]).time();
+		JourneyEnd end = spy(new JourneyEnd(cardId, readerId));
+		doReturn(dt.getTime()).when(end).time();
 		
-		return journey;				
+		mockEventLog.add(start);
+		mockEventLog.add(end);		
 	}
 
 }
