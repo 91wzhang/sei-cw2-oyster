@@ -7,7 +7,7 @@ Background:
     And a mocked payments system   
 
 Scenario Outline: Billing
-    Given <customer> made the following travel: <travel>
+    When <customer> made the following travel: <travel>
     Then <customer> is charged for <fee>
     
 Examples: 

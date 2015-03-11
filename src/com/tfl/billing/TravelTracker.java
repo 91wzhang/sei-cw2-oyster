@@ -51,19 +51,18 @@ public class TravelTracker implements ScanListener {
         List<JourneyEvent> customerJourneyEvents = getCustomerEvents(customer, eventLog);
         List<Journey> journeys = getJourneysFromLog(customerJourneyEvents);
         BigDecimal customerTotal = getCustomerTotal(journeys);   
-        System.out.println(customer);
         getPaymentsSystem().charge(customer, journeys, roundToNearestPenny(customerTotal));
     }
 
-    protected BigDecimal roundToNearestPenny(BigDecimal poundsAndPence) {
+    private BigDecimal roundToNearestPenny(BigDecimal poundsAndPence) {
         return poundsAndPence.setScale(2, BigDecimal.ROUND_HALF_UP);
     }
 
-    protected boolean peak(Journey journey) {
+    private boolean peak(Journey journey) {
         return peak(journey.startTime()) || peak(journey.endTime());
     }
 
-    protected boolean peak(Date time) {
+    private boolean peak(Date time) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(time);
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
@@ -77,6 +76,7 @@ public class TravelTracker implements ScanListener {
 			return false;
 		return true;
 	}
+	
     public void connect(OysterCardReader... cardReaders) {
         for (OysterCardReader cardReader : cardReaders) {
             cardReader.register(this);

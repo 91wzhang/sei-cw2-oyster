@@ -33,6 +33,7 @@ import com.tfl.external.PaymentsSystem;
 import cucumber.api.java.Before;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
+import cucumber.api.java.en.When;
 
 /**
  * @author Wai
@@ -85,25 +86,22 @@ public class BillingSteps {
 		this.mockPaymentsSystem = mock(PaymentsSystem.class); 
 	}
 	
-	@Given("^(.*) made the following travel: (.*)$")
+	@When("^(.*) made the following travel: (.*)$")
 	public void CustomerMadeTravel(String customer, List<String> travel) throws ParseException {
 		UUID cardId = customers.get(customer).cardId();
 		for (String journey : travel) {
 			String[] events = journey.split("-");
+			String startTime = events[0].split("@")[1];
+			String endTime = events[1].split("@")[1];
 			
-			DateFormat format = new SimpleDateFormat("HH:mm");
-
-			String[] info = events[0].split("@");
-			Date dt = format.parse(info[1]);			
-			JourneyStart start = spy(new JourneyStart(cardId, mockReaderId));
-			doReturn(dt.getTime()).when(start).time();			
-			mockEventLog.add(start);
-			
-			info = events[1].split("@");
-			dt = format.parse(info[1]);			
-			JourneyEnd end = spy(new JourneyEnd(cardId, mockReaderId));
-			doReturn(dt.getTime()).when(end).time();			
-			mockEventLog.add(end);			
+			JourneyEvent[] mockJourney;		
+			try {
+				mockJourney = generateMockJourney(cardId, mockReaderId, startTime, endTime);
+				mockEventLog.add(mockJourney[0]);
+				mockEventLog.add(mockJourney[1]);				
+			} catch (ParseException e) {
+				e.printStackTrace();
+			}	
 		}
 	}	
 
@@ -117,5 +115,29 @@ public class BillingSteps {
 		tracker.chargeAccounts();		
 
 		verify(mockPaymentsSystem).charge(eq(c), anyListOf(Journey.class), eq(new BigDecimal(fee)));		
+	}
+	
+	/**
+	 * 
+	 * @param cardId
+	 * @param readerId
+	 * @param startTime
+	 * @param endTime
+	 * @return
+	 * @throws ParseException
+	 */
+	private JourneyEvent[] generateMockJourney(UUID cardId, UUID readerId, String startTime, String endTime) throws ParseException {
+		DateFormat format = new SimpleDateFormat("HH:mm");
+		JourneyEvent[] journey = new JourneyEvent[2];
+
+		Date dt = format.parse(startTime);			
+		journey[0] = spy(new JourneyStart(cardId, readerId));
+		doReturn(dt.getTime()).when(journey[0]).time();					
+		
+		dt = format.parse(endTime);			
+		journey[1] = spy(new JourneyEnd(cardId, readerId));
+		doReturn(dt.getTime()).when(journey[1]).time();
+		
+		return journey;				
 	}
 }

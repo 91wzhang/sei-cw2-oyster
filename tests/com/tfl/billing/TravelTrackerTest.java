@@ -8,7 +8,11 @@ import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Mockito.*;
 
 import java.math.BigDecimal;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -33,12 +37,12 @@ import com.tfl.external.PaymentsSystem;
 @RunWith(MockitoJUnitRunner.class)
 public class TravelTrackerTest {
 	
-	static final BigDecimal PEAK_JOURNEY_LONG_PRICE = new BigDecimal(3.80);
-	static final BigDecimal PEAK_JOURNEY_SHORT_PRICE = new BigDecimal(2.90);
-	static final BigDecimal OFF_PEAK_LONG_JOURNEY_PRICE = new BigDecimal(2.70);
-	static final BigDecimal OFF_PEAK_SHORT_JOURNEY_PRICE = new BigDecimal(1.60);
-	static final BigDecimal PEAK_DAILY_CAPS = new BigDecimal(7.00);
-	static final BigDecimal OFF_PEAK_DAILY_CAPS = new BigDecimal(9.00);
+	static final BigDecimal PEAK_JOURNEY_LONG_PRICE = new BigDecimal("3.80");
+	static final BigDecimal PEAK_JOURNEY_SHORT_PRICE = new BigDecimal("2.90");
+	static final BigDecimal OFF_PEAK_LONG_JOURNEY_PRICE = new BigDecimal("2.70");
+	static final BigDecimal OFF_PEAK_SHORT_JOURNEY_PRICE = new BigDecimal("1.60");
+	static final BigDecimal PEAK_DAILY_CAPS = new BigDecimal("7.00");
+	static final BigDecimal OFF_PEAK_DAILY_CAPS = new BigDecimal("9.00");
 	
 	@Mock
     private Set<UUID> mockCurrentlyTravelling;
@@ -77,12 +81,14 @@ public class TravelTrackerTest {
 	 */
 	@Test
 	public void testChargeAccounts() {
-		UUID cardId = UUID.randomUUID();
+		UUID cardId1 = UUID.randomUUID();
+		UUID cardId2 = UUID.randomUUID();
+
 		UUID readerId = UUID.randomUUID();
 		Customer mockCustomer1 = mock(Customer.class);
 		Customer mockCustomer2 = mock(Customer.class);
-		doReturn(cardId).when(mockCustomer1).cardId();
-		doReturn(cardId).when(mockCustomer2).cardId();
+		doReturn(cardId1).when(mockCustomer1).cardId();
+		doReturn(cardId2).when(mockCustomer2).cardId();
 		
 		List<Customer> mockCustomerCollection = new ArrayList<Customer>();
 		mockCustomerCollection.add(mockCustomer1);
@@ -90,19 +96,22 @@ public class TravelTrackerTest {
 		
 		doReturn(mockCustomerCollection).when(mockCustomerDatabase).getCustomers();
 		
-		JourneyStart mockStart = new JourneyStart(cardId, readerId);
-		JourneyEnd mockEnd = new JourneyEnd(cardId, readerId);
-		mockEventLog.add(mockStart);
-		mockEventLog.add(mockEnd);
-		doReturn(true).doReturn(false).when(tracker).peak(any(Journey.class));
-				
-		BigDecimal peakPrice = tracker.roundToNearestPenny(PEAK_JOURNEY_SHORT_PRICE);
-		BigDecimal offpeakPrice = tracker.roundToNearestPenny(OFF_PEAK_SHORT_JOURNEY_PRICE);
+		JourneyEvent[] mockJourney;		
+		try {
+			mockJourney = generateMockJourney(cardId1, readerId, "08:00", "08:10");
+			mockEventLog.add(mockJourney[0]);
+			mockEventLog.add(mockJourney[1]);
+			mockJourney = generateMockJourney(cardId2, readerId, "11:10", "11:25");
+			mockEventLog.add(mockJourney[0]);
+			mockEventLog.add(mockJourney[1]);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}	
 		
 		tracker.chargeAccounts();						
 
-		verify(mockPaymentsSystem).charge(eq(mockCustomer1), anyListOf(Journey.class), eq(peakPrice));
-		verify(mockPaymentsSystem).charge(eq(mockCustomer2), anyListOf(Journey.class), eq(offpeakPrice));				
+		verify(mockPaymentsSystem).charge(eq(mockCustomer1), anyListOf(Journey.class), eq(PEAK_JOURNEY_SHORT_PRICE));
+		verify(mockPaymentsSystem).charge(eq(mockCustomer2), anyListOf(Journey.class), eq(OFF_PEAK_SHORT_JOURNEY_PRICE));				
 	}
 
 	/**
@@ -132,7 +141,6 @@ public class TravelTrackerTest {
 		UUID readerId = UUID.randomUUID();
 		tracker.cardScanned(cardId, readerId);
 		
-		verify(tracker).getNewJourneyEnd(cardId, readerId);
 		verify(mockEventLog).add(mockJourneyEnd);
         verify(mockCurrentlyTravelling).remove(cardId);
 	}	
@@ -152,7 +160,6 @@ public class TravelTrackerTest {
 		tracker.cardScanned(cardId, readerId);
 		
 		verify(mockCurrentlyTravelling).add(cardId);
-		verify(tracker).getNewJourneyStart(cardId, readerId);
 		verify(mockEventLog).add(mockJourneyStart);
 	}
 	
@@ -170,6 +177,30 @@ public class TravelTrackerTest {
 		tracker.cardScanned(cardId, readerId);
 		
 		verify(tracker).raiseUnknownOysterCardException(cardId);
+	}
+	
+	/**
+	 * 
+	 * @param cardId
+	 * @param readerId
+	 * @param startTime
+	 * @param endTime
+	 * @return
+	 * @throws ParseException
+	 */
+	private JourneyEvent[] generateMockJourney(UUID cardId, UUID readerId, String startTime, String endTime) throws ParseException {
+		DateFormat format = new SimpleDateFormat("HH:mm");
+		JourneyEvent[] journey = new JourneyEvent[2];
+
+		Date dt = format.parse(startTime);			
+		journey[0] = spy(new JourneyStart(cardId, readerId));
+		doReturn(dt.getTime()).when(journey[0]).time();					
+		
+		dt = format.parse(endTime);			
+		journey[1] = spy(new JourneyEnd(cardId, readerId));
+		doReturn(dt.getTime()).when(journey[1]).time();
+		
+		return journey;				
 	}
 
 }
