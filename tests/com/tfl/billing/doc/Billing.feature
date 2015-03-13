@@ -1,4 +1,4 @@
-Feature: Travelling record	
+Feature: Billing	
  	
 Background: 
     Given a mocked customer database which contains:

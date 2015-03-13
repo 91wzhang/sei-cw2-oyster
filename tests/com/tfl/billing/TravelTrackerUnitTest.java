@@ -35,7 +35,7 @@ import com.tfl.external.PaymentsSystem;
  *
  */
 @RunWith(MockitoJUnitRunner.class)
-public class TravelTrackerTest {
+public class TravelTrackerUnitTest {
 	
 	static final BigDecimal PEAK_JOURNEY_LONG_PRICE = new BigDecimal("3.80");
 	static final BigDecimal PEAK_JOURNEY_SHORT_PRICE = new BigDecimal("2.90");
@@ -67,13 +67,6 @@ public class TravelTrackerTest {
 		doReturn(this.mockCustomerDatabase).when(this.tracker).getCustomerDatabase();
 		doReturn(this.mockPaymentsSystem).when(this.tracker).getPaymentsSystem();
 		doNothing().when(this.mockPaymentsSystem).charge(any(Customer.class), anyListOf(Journey.class), any(BigDecimal.class));
-	}
-
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@After
-	public void tearDown() throws Exception {
 	}
 
 	/**
