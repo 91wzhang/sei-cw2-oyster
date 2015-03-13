@@ -18,6 +18,6 @@ import cucumber.api.junit.Cucumber;
 		glue = "classpath:com/tfl/billing",
 		plugin = { "progress", "html:reports/cucumber" }
 )
-public class TravelTrackerBDDTests {
+public class TravelTrackerTests {
 	
 }
